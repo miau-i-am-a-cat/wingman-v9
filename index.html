@@ -924,34 +924,77 @@ section { position: relative; padding: 140px 40px; }
   transition: opacity 0.8s ease 0.5s;
 }
 
-/* ── Touch device overrides — remove delays that cause stuck states ── */
-@media (hover: none) {
+/* ══════════════════════════════════════════════════════
+   TOUCH DEVICES — completely independent card system
+   No dual-transition technique. Single transition per
+   property. Uses .is-open class managed by touchend.
+   ══════════════════════════════════════════════════════ */
+@media (hover: none), (pointer: coarse) {
+  /* Reset all desktop dual-transitions to single declarations */
+  .manifest-row::before {
+    transition: height 0.9s var(--ease-out-expo);
+  }
   .manifest-row.is-open::before {
+    height: 100%;
     transition: height 1.2s var(--ease-out-expo);
   }
+
+  .manifest-row-main {
+    transition: padding-left 0.6s var(--ease-out-quart);
+  }
   .manifest-row.is-open .manifest-row-main {
+    padding-left: 8px;
     transition: padding-left 0.8s var(--ease-out-quart);
   }
+
+  .manifest-row-main::after {
+    transition: transform 0.7s ease;
+  }
   .manifest-row.is-open .manifest-row-main::after {
+    transform: scaleX(1);
     transition: transform 1.4s cubic-bezier(0.08, 0.82, 0.17, 1);
+  }
+
+  .manifest-name {
+    transition: color 0.5s ease;
   }
   .manifest-row.is-open .manifest-name {
     transition: color 0.6s ease;
   }
+
+  .manifest-name .mn-serif {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
   .manifest-row.is-open .mn-serif {
-    transition: opacity 0.8s ease 0.1s, transform 0.8s var(--ease-out-quart) 0.1s;
+    opacity: 0.8; transform: translateX(6px);
+    transition: opacity 0.8s ease, transform 0.8s var(--ease-out-quart);
+  }
+
+  .manifest-tag {
+    transition: border-color 0.4s ease, color 0.4s ease, background 0.4s ease;
   }
   .manifest-row.is-open .manifest-tag {
-    transition: border-color 0.6s ease 0.1s, color 0.6s ease 0.1s, background 0.6s ease 0.1s;
+    transition: border-color 0.6s ease, color 0.6s ease, background 0.6s ease;
+  }
+
+  /* Content area — no delays, direct open/close */
+  .manifest-desc {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.5s ease;
   }
   .manifest-row.is-open .manifest-desc {
     max-height: 500px;
-    transition: max-height 0.6s var(--ease-out-quart),
-                padding 0.6s var(--ease-out-quart);
+    transition: max-height 0.8s var(--ease-out-quart);
+  }
+
+  /* Text — visible immediately when open, no delay */
+  .manifest-desc-inner {
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
   .manifest-row.is-open .manifest-desc-inner {
     opacity: 1;
-    transition: opacity 0.5s ease 0.15s;
+    transition: opacity 0.4s ease 0.15s;
   }
 }
 
@@ -1963,9 +2006,7 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
     }
   }
 
-  // Manifest rows — desktop: hover, mobile: tap
-  // Scramble synced to movement 6 (500ms) so text decodes as it fades in
-  const canHover = window.matchMedia('(hover: hover)').matches;
+  // Manifest rows — completely separate desktop (hover) and touch (tap) paths
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   function closeAllRows() {
@@ -1982,7 +2023,8 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
     const scrambler = new TextScramble(descInner);
     descInner._scrambler = scrambler;
 
-    if (canHover && !isTouch) {
+    if (!isTouch) {
+      // ── Desktop: hover open/close ──
       let scrambleTimer = null;
       row.addEventListener('mouseenter', () => {
         row.classList.add('is-open');
@@ -1993,24 +2035,46 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
         if (scrambleTimer) clearTimeout(scrambleTimer);
         scrambler.reset();
       });
+    } else {
+      // ── Touch: tap toggle via touchend ──
+      // Using touchend directly avoids all synthesized click/mouseenter issues
+      let handled = false;
+      row.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handled = true;
+        const wasOpen = row.classList.contains('is-open');
+        closeAllRows();
+        if (!wasOpen) {
+          row.classList.add('is-open');
+          setTimeout(() => scrambler.scramble(), 300);
+        }
+      }, { passive: false });
+      // Fallback click for accessibility (keyboard, stylus)
+      row.addEventListener('click', (e) => {
+        if (handled) { handled = false; return; }
+        e.stopPropagation();
+        const wasOpen = row.classList.contains('is-open');
+        closeAllRows();
+        if (!wasOpen) {
+          row.classList.add('is-open');
+          setTimeout(() => scrambler.scramble(), 300);
+        }
+      });
     }
+  });
 
-    row.addEventListener('click', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      const wasOpen = row.classList.contains('is-open');
+  // Close when tapping outside — touch uses touchend, desktop uses click
+  if (isTouch) {
+    document.addEventListener('touchend', (e) => {
+      if (e.target.closest('.manifest-row')) return;
       closeAllRows();
-      if (!wasOpen) {
-        row.classList.add('is-open');
-        setTimeout(() => scrambler.scramble(), 500);
-      }
     });
-  });
-
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('.manifest-row')) return;
-    closeAllRows();
-  });
+  } else {
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.manifest-row')) return;
+      closeAllRows();
+    });
+  }
 
   // ═══════════════════════════════════════════════════
   // SCROLL RULER — progress tracker
