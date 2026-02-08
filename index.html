@@ -925,100 +925,140 @@ section { position: relative; padding: 140px 40px; }
 }
 
 /* ══════════════════════════════════════════════════════
-   TOUCH DEVICES — full rewrite from scratch.
-   Ditches max-height entirely. Uses grid-row collapse
-   which is reliable on mobile WebKit/Blink.
+   TOUCH DEVICES — Bottom drawer system.
+   No height animation. Uses transform: translateY()
+   which is GPU-composited and reliable on mobile WebKit.
    ══════════════════════════════════════════════════════ */
 @media (hover: none), (pointer: coarse) {
-  /* Kill overflow:hidden on the row — this is the main culprit */
-  .manifest-row {
-    overflow: visible;
-  }
+  /* Hide inline expand entirely on touch */
+  .manifest-desc { display: none !important; }
+  .manifest-row-main::after { display: none; }
+  .manifest-row { overflow: visible; }
 
-  /* Accent bar — simple, no dual-transition */
+  /* Row highlight when selected */
   .manifest-row::before {
-    clip-path: inset(0);
-    height: 100%;
-    transform: scaleY(0);
-    transform-origin: top;
-    transition: transform 0.8s var(--ease-out-expo);
+    transition: height 0.6s var(--ease-out-expo);
   }
   .manifest-row.is-open::before {
-    transform: scaleY(1);
-    transition: transform 1s var(--ease-out-expo);
+    height: 100%;
+    transition: height 0.8s var(--ease-out-expo);
   }
-
-  /* No horizontal rule on touch */
-  .manifest-row-main::after {
-    display: none;
-  }
-
-  /* Row shift */
-  .manifest-row-main {
-    transition: padding-left 0.6s var(--ease-out-quart);
-  }
+  .manifest-name { transition: color 0.4s ease; }
   .manifest-row.is-open .manifest-row-main {
     padding-left: 8px;
-    transition: padding-left 0.7s var(--ease-out-quart);
-  }
-
-  /* Name color */
-  .manifest-name {
-    transition: color 0.6s ease;
-  }
-  .manifest-row.is-open .manifest-name {
-    transition: color 0.6s ease;
-  }
-
-  /* Serif nudge */
-  .manifest-name .mn-serif {
-    transition: opacity 0.5s ease, transform 0.5s ease;
-  }
-  .manifest-row.is-open .mn-serif {
-    opacity: 0.8;
-    transform: translateX(6px);
-    transition: opacity 0.7s ease, transform 0.7s var(--ease-out-quart);
-  }
-
-  /* Tag */
-  .manifest-tag {
-    transition: border-color 0.4s ease, color 0.4s ease, background 0.4s ease;
-  }
-  .manifest-row.is-open .manifest-tag {
-    transition: border-color 0.5s ease, color 0.5s ease, background 0.5s ease;
-  }
-
-  /* ── Content reveal — grid-row technique ──
-     Parent becomes a grid. The desc wrapper collapses
-     via grid-template-rows: 0fr → 1fr. Inner child
-     has overflow:hidden + min-height:0 to enable collapse.
-     No max-height anywhere. */
-  .manifest-desc {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.5s var(--ease-out-quart);
-    padding: 0;
-    max-height: none;
-    overflow: visible;
-  }
-  .manifest-row.is-open .manifest-desc {
-    grid-template-rows: 1fr;
-    transition: grid-template-rows 0.7s var(--ease-out-quart);
-  }
-  .manifest-desc-inner {
-    overflow: hidden;
-    min-height: 0;
-    padding: 0 0 0 72px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  .manifest-row.is-open .manifest-desc-inner {
-    padding-top: 12px;
-    padding-bottom: 24px;
-    opacity: 1;
-    transition: opacity 0.4s ease 0.1s;
+    transition: padding-left 0.5s var(--ease-out-quart);
   }
 }
+
+/* ── Drawer scrim ── */
+.manifest-scrim {
+  position: fixed; inset: 0; z-index: 199;
+  background: rgba(42, 42, 40, 0.45);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.35s ease;
+  display: none;
+}
+.manifest-scrim.active {
+  opacity: 1; pointer-events: auto;
+}
+
+/* ── Bottom drawer ── */
+.manifest-drawer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  background: var(--soft-white);
+  border-top: 1px solid var(--grid-line-strong);
+  border-radius: 14px 14px 0 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(100%);
+  visibility: hidden;
+  transition: transform 0.45s var(--ease-out-expo),
+              visibility 0s linear 0.45s;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.08), 0 -16px 48px rgba(0,0,0,0.06);
+  display: none;
+}
+.manifest-drawer.drawer-open {
+  transform: translateY(0);
+  visibility: visible;
+  transition: transform 0.5s var(--ease-out-expo),
+              visibility 0s linear 0s;
+}
+
+/* Accent bar on left edge */
+.manifest-drawer::before {
+  content: '';
+  position: absolute; top: 0; left: 0; bottom: 0;
+  width: 2px;
+  border-radius: 14px 0 0 0;
+}
+.manifest-drawer.drawer-blue::before { background: var(--accent-blue); }
+.manifest-drawer.drawer-green::before { background: var(--accent-green); }
+
+/* Grab handle */
+.drawer-handle {
+  width: 36px; height: 4px;
+  background: rgba(42, 42, 40, 0.15);
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+/* Header */
+.drawer-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--grid-line-strong);
+}
+.drawer-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+}
+.drawer-num.dn-blue { color: var(--accent-blue); }
+.drawer-num.dn-green { color: var(--accent-green); }
+.drawer-name {
+  font-family: 'Archivo', sans-serif;
+  font-size: 24px; font-weight: 700;
+  letter-spacing: -0.025em; color: var(--charcoal);
+  display: flex; align-items: baseline; gap: 10px;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s var(--ease-out-expo);
+}
+.drawer-open .drawer-name {
+  opacity: 1; transform: translateY(0);
+  transition-delay: 0.08s;
+}
+.drawer-serif {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic; font-weight: 400;
+  font-size: 17px; opacity: 0.5;
+}
+.drawer-serif.ds-blue { color: var(--accent-blue); }
+.drawer-serif.ds-green { color: var(--accent-green); }
+
+/* Body */
+.drawer-body {
+  padding: 24px;
+}
+.drawer-desc {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px; line-height: 1.85;
+  color: rgba(42, 42, 40, 0.55);
+  max-width: 540px;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 0.4s ease, transform 0.4s var(--ease-out-expo);
+}
+.drawer-open .drawer-desc {
+  opacity: 1; transform: translateY(0);
+  transition-delay: 0.15s;
+}
+
+/* Safe area padding for notched devices */
+.drawer-body { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
 
 .manifest-connector {
   position: absolute; left: 62px; top: 0; bottom: 0; width: 1px;
@@ -1450,8 +1490,6 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
   .manifest-tag { display: none; }
   .manifest-name { font-size: 18px; }
   .manifest-connector { left: 40px; }
-  .manifest-row-main::after { left: 48px; }
-  .manifest-desc-inner { padding-left: 48px; }
   .projects-grid { grid-template-columns: repeat(2, 1fr); }
   .footer-inner { grid-template-columns: 1fr; gap: 20px; text-align: center; }
   .footer-right { text-align: center; }
@@ -2028,7 +2066,7 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
     }
   }
 
-  // Manifest rows — completely separate desktop (hover) and touch (tap) paths
+  // Manifest rows — completely separate desktop (hover) and touch (drawer) paths
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   function closeAllRows() {
@@ -2039,14 +2077,15 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
     });
   }
 
-  document.querySelectorAll('.manifest-row').forEach(row => {
-    const descInner = row.querySelector('.manifest-desc-inner');
-    if (!descInner) return;
-    const scrambler = new TextScramble(descInner);
-    descInner._scrambler = scrambler;
-
-    if (!isTouch) {
-      // ── Desktop: hover open/close ──
+  if (!isTouch) {
+    // ══════════════════════════════════════════
+    // DESKTOP — hover open/close (unchanged)
+    // ══════════════════════════════════════════
+    document.querySelectorAll('.manifest-row').forEach(row => {
+      const descInner = row.querySelector('.manifest-desc-inner');
+      if (!descInner) return;
+      const scrambler = new TextScramble(descInner);
+      descInner._scrambler = scrambler;
       let scrambleTimer = null;
       row.addEventListener('mouseenter', () => {
         row.classList.add('is-open');
@@ -2057,44 +2096,139 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
         if (scrambleTimer) clearTimeout(scrambleTimer);
         scrambler.reset();
       });
-    } else {
-      // ── Touch: tap toggle via touchend ──
-      // Using touchend directly avoids all synthesized click/mouseenter issues
-      let handled = false;
-      row.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        handled = true;
-        const wasOpen = row.classList.contains('is-open');
-        closeAllRows();
-        if (!wasOpen) {
-          row.classList.add('is-open');
-          setTimeout(() => scrambler.scramble(), 300);
-        }
-      }, { passive: false });
-      // Fallback click for accessibility (keyboard, stylus)
-      row.addEventListener('click', (e) => {
-        if (handled) { handled = false; return; }
-        e.stopPropagation();
-        const wasOpen = row.classList.contains('is-open');
-        closeAllRows();
-        if (!wasOpen) {
-          row.classList.add('is-open');
-          setTimeout(() => scrambler.scramble(), 300);
-        }
-      });
-    }
-  });
-
-  // Close when tapping outside — touch uses touchend, desktop uses click
-  if (isTouch) {
-    document.addEventListener('touchend', (e) => {
-      if (e.target.closest('.manifest-row')) return;
-      closeAllRows();
     });
-  } else {
     document.addEventListener('click', (e) => {
       if (e.target.closest('.manifest-row')) return;
       closeAllRows();
+    });
+
+  } else {
+    // ══════════════════════════════════════════
+    // TOUCH — bottom drawer (brand new system)
+    // ══════════════════════════════════════════
+
+    // Create drawer + scrim once
+    const scrim = document.createElement('div');
+    scrim.className = 'manifest-scrim';
+    document.body.appendChild(scrim);
+
+    const drawer = document.createElement('div');
+    drawer.className = 'manifest-drawer';
+    drawer.innerHTML = `
+      <div class="drawer-handle"></div>
+      <div class="drawer-header">
+        <div class="drawer-num"></div>
+        <div class="drawer-name"><span class="drawer-name-text"></span> <span class="drawer-serif"></span></div>
+      </div>
+      <div class="drawer-body">
+        <div class="drawer-desc"></div>
+      </div>
+    `;
+    document.body.appendChild(drawer);
+
+    // Show both elements (they start hidden via CSS display:none)
+    scrim.style.display = 'block';
+    drawer.style.display = 'block';
+
+    const drawerNum = drawer.querySelector('.drawer-num');
+    const drawerNameText = drawer.querySelector('.drawer-name-text');
+    const drawerSerif = drawer.querySelector('.drawer-serif');
+    const drawerDesc = drawer.querySelector('.drawer-desc');
+    const drawerScrambler = new TextScramble(drawerDesc);
+
+    let activeRow = null;
+
+    function openDrawer(row) {
+      // Extract data from the row
+      const num = row.querySelector('.manifest-num').textContent;
+      const nameEl = row.querySelector('.manifest-name');
+      const nameText = nameEl.childNodes[0].textContent.trim();
+      const serifEl = row.querySelector('.mn-serif');
+      const serifText = serifEl ? serifEl.textContent : '';
+      const descText = row.querySelector('.manifest-desc-inner').textContent;
+      const isBlue = row.classList.contains('mr-blue');
+      const colorClass = isBlue ? 'blue' : 'green';
+
+      // Populate drawer
+      drawerNum.textContent = num;
+      drawerNum.className = 'drawer-num dn-' + colorClass;
+      drawerNameText.textContent = nameText;
+      drawerSerif.textContent = serifText;
+      drawerSerif.className = 'drawer-serif ds-' + colorClass;
+      drawerDesc.textContent = descText;
+
+      // Set drawer accent color
+      drawer.className = 'manifest-drawer drawer-' + colorClass;
+
+      // Highlight the row
+      closeAllRows();
+      row.classList.add('is-open');
+      activeRow = row;
+
+      // Open — force reflow then animate
+      void drawer.offsetHeight;
+      drawer.classList.add('drawer-open');
+      scrim.classList.add('active');
+
+      // Scramble the description text
+      setTimeout(() => drawerScrambler.scramble(), 250);
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('drawer-open');
+      scrim.classList.remove('active');
+      closeAllRows();
+      activeRow = null;
+      drawerScrambler.reset();
+    }
+
+    // Row tap handlers
+    document.querySelectorAll('.manifest-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (activeRow === row) {
+          closeDrawer();
+        } else {
+          openDrawer(row);
+        }
+      });
+    });
+
+    // Close on scrim tap
+    scrim.addEventListener('click', closeDrawer);
+
+    // Swipe-to-dismiss on drawer
+    let touchStartY = 0;
+    let touchCurrentY = 0;
+    let isDragging = false;
+    drawer.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+      isDragging = true;
+      drawer.style.transition = 'none';
+    }, { passive: true });
+    drawer.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      touchCurrentY = e.touches[0].clientY;
+      const diff = touchCurrentY - touchStartY;
+      if (diff > 0) {
+        drawer.style.transform = 'translateY(' + diff + 'px)';
+      }
+    }, { passive: true });
+    drawer.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      drawer.style.transition = '';
+      const diff = touchCurrentY - touchStartY;
+      if (diff > 80) {
+        closeDrawer();
+      } else {
+        drawer.style.transform = '';
+        if (drawer.classList.contains('drawer-open')) {
+          drawer.style.transform = 'translateY(0)';
+        }
+      }
+      touchStartY = 0;
+      touchCurrentY = 0;
     });
   }
 
