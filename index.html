@@ -925,140 +925,40 @@ section { position: relative; padding: 140px 40px; }
 }
 
 /* ══════════════════════════════════════════════════════
-   TOUCH DEVICES — Bottom drawer system.
-   No height animation. Uses transform: translateY()
-   which is GPU-composited and reliable on mobile WebKit.
+   TOUCH DEVICES — dead simple dropdown.
+   No fancy animations. Just display:none/block toggle
+   with the text scramble. Color the existing row borders.
    ══════════════════════════════════════════════════════ */
 @media (hover: none), (pointer: coarse) {
-  /* Hide inline expand entirely on touch */
-  .manifest-desc { display: none !important; }
+  /* Kill all desktop animation stuff */
+  .manifest-row::before { display: none; }
   .manifest-row-main::after { display: none; }
   .manifest-row { overflow: visible; }
+  .manifest-row-main { transition: none; }
+  .manifest-name { transition: none; }
+  .manifest-name .mn-serif { transition: none; }
+  .manifest-tag { transition: none; }
 
-  /* Row highlight when selected */
-  .manifest-row::before {
-    transition: height 0.6s var(--ease-out-expo);
+  /* Color the row border when open */
+  .manifest-row.is-open.mr-blue { border-bottom-color: var(--accent-blue); }
+  .manifest-row.is-open.mr-green { border-bottom-color: var(--accent-green); }
+  .manifest-row.is-open.mr-blue .manifest-name { color: var(--accent-blue); }
+  .manifest-row.is-open.mr-green .manifest-name { color: var(--accent-green); }
+
+  /* Content: just hidden or shown. No height animation. */
+  .manifest-desc {
+    max-height: none; overflow: visible;
+    padding: 0; display: none;
   }
-  .manifest-row.is-open::before {
-    height: 100%;
-    transition: height 0.8s var(--ease-out-expo);
+  .manifest-row.is-open .manifest-desc {
+    display: block;
+    padding: 0 0 20px 48px;
   }
-  .manifest-name { transition: color 0.4s ease; }
-  .manifest-row.is-open .manifest-row-main {
-    padding-left: 8px;
-    transition: padding-left 0.5s var(--ease-out-quart);
+  .manifest-desc-inner {
+    opacity: 1; transition: none;
+    padding-top: 0;
   }
 }
-
-/* ── Drawer scrim ── */
-.manifest-scrim {
-  position: fixed; inset: 0; z-index: 199;
-  background: rgba(42, 42, 40, 0.45);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.35s ease;
-  display: none;
-}
-.manifest-scrim.active {
-  opacity: 1; pointer-events: auto;
-}
-
-/* ── Bottom drawer ── */
-.manifest-drawer {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 200;
-  background: var(--soft-white);
-  border-top: 1px solid var(--grid-line-strong);
-  border-radius: 14px 14px 0 0;
-  max-height: 70vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  transform: translateY(100%);
-  visibility: hidden;
-  transition: transform 0.45s var(--ease-out-expo),
-              visibility 0s linear 0.45s;
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.08), 0 -16px 48px rgba(0,0,0,0.06);
-  display: none;
-}
-.manifest-drawer.drawer-open {
-  transform: translateY(0);
-  visibility: visible;
-  transition: transform 0.5s var(--ease-out-expo),
-              visibility 0s linear 0s;
-}
-
-/* Accent bar on left edge */
-.manifest-drawer::before {
-  content: '';
-  position: absolute; top: 0; left: 0; bottom: 0;
-  width: 2px;
-  border-radius: 14px 0 0 0;
-}
-.manifest-drawer.drawer-blue::before { background: var(--accent-blue); }
-.manifest-drawer.drawer-green::before { background: var(--accent-green); }
-
-/* Grab handle */
-.drawer-handle {
-  width: 36px; height: 4px;
-  background: rgba(42, 42, 40, 0.15);
-  border-radius: 2px;
-  margin: 12px auto 0;
-}
-
-/* Header */
-.drawer-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--grid-line-strong);
-}
-.drawer-num {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px; font-weight: 500;
-  letter-spacing: 0.02em;
-  margin-bottom: 8px;
-}
-.drawer-num.dn-blue { color: var(--accent-blue); }
-.drawer-num.dn-green { color: var(--accent-green); }
-.drawer-name {
-  font-family: 'Archivo', sans-serif;
-  font-size: 24px; font-weight: 700;
-  letter-spacing: -0.025em; color: var(--charcoal);
-  display: flex; align-items: baseline; gap: 10px;
-  opacity: 0; transform: translateY(8px);
-  transition: opacity 0.4s ease, transform 0.4s var(--ease-out-expo);
-}
-.drawer-open .drawer-name {
-  opacity: 1; transform: translateY(0);
-  transition-delay: 0.08s;
-}
-.drawer-serif {
-  font-family: 'Instrument Serif', serif;
-  font-style: italic; font-weight: 400;
-  font-size: 17px; opacity: 0.5;
-}
-.drawer-serif.ds-blue { color: var(--accent-blue); }
-.drawer-serif.ds-green { color: var(--accent-green); }
-
-/* Body */
-.drawer-body {
-  padding: 24px;
-}
-.drawer-desc {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 13px; line-height: 1.85;
-  color: rgba(42, 42, 40, 0.55);
-  max-width: 540px;
-  opacity: 0; transform: translateY(6px);
-  transition: opacity 0.4s ease, transform 0.4s var(--ease-out-expo);
-}
-.drawer-open .drawer-desc {
-  opacity: 1; transform: translateY(0);
-  transition-delay: 0.15s;
-}
-
-/* Safe area padding for notched devices */
-.drawer-body { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
 
 .manifest-connector {
   position: absolute; left: 62px; top: 0; bottom: 0; width: 1px;
@@ -2066,7 +1966,7 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
     }
   }
 
-  // Manifest rows — completely separate desktop (hover) and touch (drawer) paths
+  // Manifest rows
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   function closeAllRows() {
@@ -2077,160 +1977,42 @@ footer { border-top: 1px solid var(--grid-line-strong); padding: 48px 40px; }
     });
   }
 
-  if (!isTouch) {
-    // ══════════════════════════════════════════
-    // DESKTOP — hover open/close (unchanged)
-    // ══════════════════════════════════════════
-    document.querySelectorAll('.manifest-row').forEach(row => {
-      const descInner = row.querySelector('.manifest-desc-inner');
-      if (!descInner) return;
-      const scrambler = new TextScramble(descInner);
-      descInner._scrambler = scrambler;
-      let scrambleTimer = null;
+  document.querySelectorAll('.manifest-row').forEach(row => {
+    const descInner = row.querySelector('.manifest-desc-inner');
+    if (!descInner) return;
+    const scrambler = new TextScramble(descInner);
+    descInner._scrambler = scrambler;
+
+    if (!isTouch) {
+      // Desktop: hover
+      let t = null;
       row.addEventListener('mouseenter', () => {
         row.classList.add('is-open');
-        scrambleTimer = setTimeout(() => scrambler.scramble(), 500);
+        t = setTimeout(() => scrambler.scramble(), 500);
       });
       row.addEventListener('mouseleave', () => {
         row.classList.remove('is-open');
-        if (scrambleTimer) clearTimeout(scrambleTimer);
+        if (t) clearTimeout(t);
         scrambler.reset();
       });
-    });
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('.manifest-row')) return;
-      closeAllRows();
-    });
-
-  } else {
-    // ══════════════════════════════════════════
-    // TOUCH — bottom drawer (brand new system)
-    // ══════════════════════════════════════════
-
-    // Create drawer + scrim once
-    const scrim = document.createElement('div');
-    scrim.className = 'manifest-scrim';
-    document.body.appendChild(scrim);
-
-    const drawer = document.createElement('div');
-    drawer.className = 'manifest-drawer';
-    drawer.innerHTML = `
-      <div class="drawer-handle"></div>
-      <div class="drawer-header">
-        <div class="drawer-num"></div>
-        <div class="drawer-name"><span class="drawer-name-text"></span> <span class="drawer-serif"></span></div>
-      </div>
-      <div class="drawer-body">
-        <div class="drawer-desc"></div>
-      </div>
-    `;
-    document.body.appendChild(drawer);
-
-    // Show both elements (they start hidden via CSS display:none)
-    scrim.style.display = 'block';
-    drawer.style.display = 'block';
-
-    const drawerNum = drawer.querySelector('.drawer-num');
-    const drawerNameText = drawer.querySelector('.drawer-name-text');
-    const drawerSerif = drawer.querySelector('.drawer-serif');
-    const drawerDesc = drawer.querySelector('.drawer-desc');
-    const drawerScrambler = new TextScramble(drawerDesc);
-
-    let activeRow = null;
-
-    function openDrawer(row) {
-      // Extract data from the row
-      const num = row.querySelector('.manifest-num').textContent;
-      const nameEl = row.querySelector('.manifest-name');
-      const nameText = nameEl.childNodes[0].textContent.trim();
-      const serifEl = row.querySelector('.mn-serif');
-      const serifText = serifEl ? serifEl.textContent : '';
-      const descText = row.querySelector('.manifest-desc-inner').textContent;
-      const isBlue = row.classList.contains('mr-blue');
-      const colorClass = isBlue ? 'blue' : 'green';
-
-      // Populate drawer
-      drawerNum.textContent = num;
-      drawerNum.className = 'drawer-num dn-' + colorClass;
-      drawerNameText.textContent = nameText;
-      drawerSerif.textContent = serifText;
-      drawerSerif.className = 'drawer-serif ds-' + colorClass;
-      drawerDesc.textContent = descText;
-
-      // Set drawer accent color
-      drawer.className = 'manifest-drawer drawer-' + colorClass;
-
-      // Highlight the row
-      closeAllRows();
-      row.classList.add('is-open');
-      activeRow = row;
-
-      // Open — force reflow then animate
-      void drawer.offsetHeight;
-      drawer.classList.add('drawer-open');
-      scrim.classList.add('active');
-
-      // Scramble the description text
-      setTimeout(() => drawerScrambler.scramble(), 250);
-    }
-
-    function closeDrawer() {
-      drawer.classList.remove('drawer-open');
-      scrim.classList.remove('active');
-      closeAllRows();
-      activeRow = null;
-      drawerScrambler.reset();
-    }
-
-    // Row tap handlers
-    document.querySelectorAll('.manifest-row').forEach(row => {
+    } else {
+      // Touch: simple click toggle
       row.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (activeRow === row) {
-          closeDrawer();
-        } else {
-          openDrawer(row);
+        const wasOpen = row.classList.contains('is-open');
+        closeAllRows();
+        if (!wasOpen) {
+          row.classList.add('is-open');
+          scrambler.scramble();
         }
       });
-    });
+    }
+  });
 
-    // Close on scrim tap
-    scrim.addEventListener('click', closeDrawer);
-
-    // Swipe-to-dismiss on drawer
-    let touchStartY = 0;
-    let touchCurrentY = 0;
-    let isDragging = false;
-    drawer.addEventListener('touchstart', (e) => {
-      touchStartY = e.touches[0].clientY;
-      isDragging = true;
-      drawer.style.transition = 'none';
-    }, { passive: true });
-    drawer.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      touchCurrentY = e.touches[0].clientY;
-      const diff = touchCurrentY - touchStartY;
-      if (diff > 0) {
-        drawer.style.transform = 'translateY(' + diff + 'px)';
-      }
-    }, { passive: true });
-    drawer.addEventListener('touchend', () => {
-      if (!isDragging) return;
-      isDragging = false;
-      drawer.style.transition = '';
-      const diff = touchCurrentY - touchStartY;
-      if (diff > 80) {
-        closeDrawer();
-      } else {
-        drawer.style.transform = '';
-        if (drawer.classList.contains('drawer-open')) {
-          drawer.style.transform = 'translateY(0)';
-        }
-      }
-      touchStartY = 0;
-      touchCurrentY = 0;
-    });
-  }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.manifest-row')) return;
+    closeAllRows();
+  });
 
   // ═══════════════════════════════════════════════════
   // SCROLL RULER — progress tracker
